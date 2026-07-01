@@ -46,7 +46,7 @@ void sem_init(BinarySemaphore* sem);
 int sem_wait(BinarySemaphore* sem);
 void sem_post(BinarySemaphore* sem);
 uint32_t os_now (void);
-void os_yield(void);
+int os_yield(void);
 void queue_init(Queue* q);
 int enqueue(Queue* q, int value);
 int dequeue(Queue* q, int* value);

@@ -53,7 +53,7 @@ uint32_t os_now(void)
     return HAL_GetTick();
 }
 
-void os_yield(void)
+int os_yield(void)
 {
     return 1;
     // task_list[current_task].state = READY;

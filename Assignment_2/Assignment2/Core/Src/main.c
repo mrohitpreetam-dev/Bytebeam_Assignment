@@ -104,88 +104,91 @@ static void MX_USART1_UART_Init(void);
 
   }
 
-  void uart_task(void){
-    char rx_buffer[20];
-    int i = 0;
+void uart_task(void){
+    static char rx_buffer[20];
+    static int i = 0;
     char c;
-    HAL_StatusTypeDef status;
-      // HAL_UART_Receive(&huart1, (uint8_t*)&c, 1, 100);
-    char my_msg[] = "In Uart task\r\n";
-    HAL_UART_Transmit(&huart1, (uint8_t*)my_msg, sizeof(my_msg) - 1, HAL_MAX_DELAY);
-    while ((status = HAL_UART_Receive(&huart1, (uint8_t*)&c, 1,  0)) == HAL_OK){   
+
+    if (HAL_UART_Receive(&huart1, (uint8_t*)&c, 1, 0) == HAL_OK) {
         HAL_UART_Transmit(&huart1, (uint8_t*)&c, 1, 100);
-        if (c != '\r' && c != '\n'){
-          rx_buffer[i++] = c;
-          if(i >= sizeof(rx_buffer)-1) 
-              i = sizeof(rx_buffer)-2;
-          }
-          else{
+        
+        if (c != '\r' && c != '\n') {
+            rx_buffer[i++] = c;
+            if (i >= (int)sizeof(rx_buffer)-1)
+                i = (int)sizeof(rx_buffer)-2;
+        } else {
             rx_buffer[i] = '\0';
+            i = 0;
+
             if(strcmp(rx_buffer, "status") == 0){
-              char msg[64];
-              sprintf(msg,"SysTicks: %lu\r\nQueue: %d\r\nSemaphore: %d\r\n",os_now(),queue.count,sem.value);
-              HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
+                char msg[64];
+                sprintf(msg,"SysTicks: %lu\r\nQueue: %d\r\nSemaphore: %d\r\n",
+                    os_now(), queue.count, sem.value);
+                HAL_UART_Transmit(&huart1,(uint8_t*)msg,strlen(msg),HAL_MAX_DELAY);
             }
             else if(strcmp(rx_buffer, "tasks") == 0){
-                  // char msg[] ="Tasks:\r\n""Heartbeat\r\n""Task 1\r\n""Task 2\r\n""UART_Task\r\n";
-                  // HAL_UART_Transmit(&huart1,(uint8_t*)msg,sizeof(msg)-1,HAL_MAX_DELAY);
-                  TCB *tasks = os_get_task_list();
-                  int count = os_get_task_count();
-
-                  for(int i = 0; i < count; i++)
-                  {
-                      char msg[64];
-                      sprintf(msg,"Task %d : %s\r\n", i, tasks[i].name);
-                      HAL_UART_Transmit(&huart1,(uint8_t*)msg,strlen(msg),HAL_MAX_DELAY);
-                  }
+                TCB *tasks = os_get_task_list();
+                int count = os_get_task_count();
+                for(int j = 0; j < count; j++){
+                    char msg[64];
+                    sprintf(msg,"Task %d : %s\r\n", j, tasks[j].name);
+                    HAL_UART_Transmit(&huart1,(uint8_t*)msg,strlen(msg),HAL_MAX_DELAY);
+                }
             }
             else if(strcmp(rx_buffer, "state") == 0){
-                  TCB *tasks = os_get_task_list();
-                  int count = os_get_task_count();
-
-                  for(int i = 0; i < count; i++)
-                  {
-                      char *state;
-                      switch(tasks[i].state)
-                      {
-                          case READY:    state = "READY"; break;
-                          case RUNNING:  state = "RUNNING"; break;
-                          case SLEEPING: state = "SLEEPING"; break;
-                          case BLOCKED:  state = "BLOCKED"; break;
-                          default:       state = "UNKNOWN"; break;
-                      }
-
-                      char msg[80];
-                      sprintf(msg,"%s : %s | Wakeup: %lu\r\n",tasks[i].name,state,(unsigned long)tasks[i].wakeup_time);
-                      HAL_UART_Transmit(&huart1,(uint8_t*)msg,strlen(msg),HAL_MAX_DELAY);
-                  }
+                TCB *tasks = os_get_task_list();
+                int count = os_get_task_count();
+                for(int j = 0; j < count; j++){
+                    char *state;
+                    switch(tasks[j].state){
+                        case READY:    state = "READY";   break;
+                        case RUNNING:  state = "RUNNING"; break;
+                        case SLEEPING: state = "SLEEPING";break;
+                        case BLOCKED:  state = "BLOCKED"; break;
+                        default:       state = "UNKNOWN"; break;
+                    }
+                    char msg[80];
+                    sprintf(msg,"%s : %s | Wakeup: %lu\r\n",
+                        tasks[j].name, state,
+                        (unsigned long)tasks[j].wakeup_time);
+                    HAL_UART_Transmit(&huart1,(uint8_t*)msg,strlen(msg),HAL_MAX_DELAY);
+                }
             }
             else if(strcmp(rx_buffer, "help") == 0){
-              char msg[] ="Commands:\r\n""help   - Show commands\r\n""status - OS status\r\n""tasks  - List tasks\r\n""state  - Task states\r\n""tick   - Current system tick\r\n""queue  - Queue information\r\n""about  - Project information\r\n";
-              HAL_UART_Transmit(&huart1, (uint8_t*)msg, sizeof(msg) - 1, HAL_MAX_DELAY);
+                char msg[] = "Commands:\r\nhelp   - Show commands\r\n"
+                             "status - OS status\r\n"
+                             "tasks  - List tasks\r\n"
+                             "state  - Task states\r\n"
+                             "tick   - Current system tick\r\n"
+                             "queue  - Queue information\r\n"
+                             "about  - Project information\r\n";
+                HAL_UART_Transmit(&huart1,(uint8_t*)msg,sizeof(msg)-1,HAL_MAX_DELAY);
             }
             else if(strcmp(rx_buffer, "about") == 0){
-              char msg[] ="Simple Cooperative RTOS\r""Priority Scheduler\r""Binary Semaphore + Queue\r\n";
-              HAL_UART_Transmit(&huart1,(uint8_t*)msg,strlen(msg),HAL_MAX_DELAY);
+                char msg[] = "Simple Cooperative RTOS\r\n"
+                             "Priority Scheduler\r\n"
+                             "Binary Semaphore + Queue\r\n";
+                HAL_UART_Transmit(&huart1,(uint8_t*)msg,strlen(msg),HAL_MAX_DELAY);
             }
             else if(strcmp(rx_buffer, "tick") == 0){
-              char msg[32];
-              sprintf(msg,"Tick: %lu\r\n",(unsigned long)os_now());
-              HAL_UART_Transmit(&huart1,(uint8_t*)msg,strlen(msg),HAL_MAX_DELAY);
+                char msg[32];
+                sprintf(msg,"Tick: %lu\r\n",(unsigned long)os_now());
+                HAL_UART_Transmit(&huart1,(uint8_t*)msg,strlen(msg),HAL_MAX_DELAY);
             }
             else if(strcmp(rx_buffer, "queue") == 0){
-              char msg[64];
-              sprintf(msg,"Count:%d Head:%d Tail:%d\r\n",queue.count,queue.head,queue.tail);
-              HAL_UART_Transmit(&huart1,(uint8_t*)msg,strlen(msg),HAL_MAX_DELAY);
+                char msg[64];
+                sprintf(msg,"Count:%d Head:%d Tail:%d\r\n",
+                    queue.count, queue.head, queue.tail);
+                HAL_UART_Transmit(&huart1,(uint8_t*)msg,strlen(msg),HAL_MAX_DELAY);
             }
-            i = 0;
-          }    
-      }
-      if (status == HAL_TIMEOUT) {
-        os_sleep(10000); 
-        if(os_yield()) return;
-      }
+        }
+
+    } else {
+        os_sleep(50);
     }
+
+    if (os_yield()) return;
+}
 
 /* USER CODE END 0 */
 
