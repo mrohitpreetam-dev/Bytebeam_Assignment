@@ -83,7 +83,7 @@ static void MX_USART1_UART_Init(void);
       count++;
       sem_post(&sem);
       os_sleep(5000);
-      os_yield();
+      if(os_yield()) return;
   }
 
   void task_2(void){
@@ -100,7 +100,7 @@ static void MX_USART1_UART_Init(void);
           HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
       }
       os_sleep(5000);
-      os_yield();
+      if(os_yield()) return;
 
   }
 
@@ -183,7 +183,7 @@ static void MX_USART1_UART_Init(void);
       }
       if (status == HAL_TIMEOUT) {
         os_sleep(10000); 
-        return;
+        if(os_yield()) return;
       }
     }
 

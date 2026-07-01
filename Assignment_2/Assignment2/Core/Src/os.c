@@ -55,7 +55,7 @@ uint32_t os_now(void)
 
 void os_yield(void)
 {
-    return;
+    return 1;
     // task_list[current_task].state = READY;
 }
 
